@@ -1,0 +1,69 @@
+import pandas as pd
+import numpy as np
+
+# ==============================================
+# 1. LOAD DATA
+# ==============================================
+# Make sure train.csv is inside your "data" folder
+df = pd.read_csv("../data/train.csv")
+print("✅ Data loaded successfully")
+print("Shape:", df.shape)
+
+# ==============================================
+# 2. HANDLE MISSING VALUES
+# ==============================================
+
+# Check missing values
+print("\nMissing values before cleaning:")
+print(df.isnull().sum())
+
+# Age: Fill with Median
+df['Age'].fillna(df['Age'].median(), inplace=True)
+
+# Embarked: Fill with Mode (most common value)
+df['Embarked'].fillna(df['Embarked'].mode()[0], inplace=True)
+
+# Cabin: Extract Deck letter or mark as Unknown
+df['Deck'] = df['Cabin'].apply(lambda x: str(x)[0] if pd.notna(x) else 'U')
+df.drop('Cabin', axis=1, inplace=True) # Remove original Cabin column
+
+# ==============================================
+# 3. HANDLE OUTLIERS
+# ==============================================
+
+def cap_outliers(df, column):
+    Q1 = df[column].quantile(0.25)
+    Q3 = df[column].quantile(0.75)
+    IQR = Q3 - Q1
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+    df[column] = np.where(df[column] < lower_bound, lower_bound, df[column])
+    df[column] = np.where(df[column] > upper_bound, upper_bound, df[column])
+
+# Apply to Fare and Age
+cap_outliers(df, 'Fare')
+cap_outliers(df, 'Age')
+
+# ==============================================
+# 4. DATA CONSISTENCY
+# ==============================================
+
+# Remove duplicates
+df.drop_duplicates(inplace=True)
+
+# Standardize text
+df['Sex'] = df['Sex'].str.lower()
+
+# ==============================================
+# 5. SAVE CLEANED FILE
+# ==============================================
+
+# Save to data folder
+df.to_csv("../data/train_cleaned.csv", index=False)
+
+print("\n✅ CLEANING COMPLETE!")
+print("File saved as: data/train_cleaned.csv")
+print("\nNow your data folder has:")
+print("📄 train.csv (Original)")
+print("📄 test.csv (Original)")
+print("📄 train_cleaned.csv (Created by code)")
